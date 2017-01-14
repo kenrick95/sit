@@ -2,11 +2,11 @@
   "name": "sit",
   "version": "1.0.0",
   "description": "Something Is Trending",
-  "main": "index.js",
+  "main": "app.js",
   "author": "Kenrick",
   "license": "MIT",
   "scripts": {
-    "start": "node index.js"
+    "start": "node app.js"
   },
   "dependencies": {
     "asyncawait": "^1.0.6",

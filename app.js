@@ -5,6 +5,10 @@ var request = Promise.promisifyAll(require('request'))
 var async = require('asyncawait/async')
 var await = require('asyncawait/await')
 var pad = require("underscore.string/pad")
+var port = parseInt(process.env.PORT, 10)
+if (isNaN(port)) {
+  port = 80
+}
 
 // for a given date period "start" till "end",
 //     determine what is a trending topic on Wikipedia
