@@ -1,0 +1,20 @@
+{
+  "name": "sit",
+  "version": "1.0.0",
+  "description": "Something Is Trending",
+  "main": "index.js",
+  "author": "Kenrick",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "asyncawait": "^1.0.6",
+    "bluebird": "^3.4.7",
+    "chart.js": "^2.4.0",
+    "express": "^4.14.0",
+    "pug": "^2.0.0-beta6",
+    "request": "^2.79.0",
+    "underscore.string": "^3.3.4"
+  }
+}
