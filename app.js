@@ -109,24 +109,23 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
           }
         }
       }
-
-      // Filtering
-      // Arbitary number killing
-      for (var key in articleCountByDay) {
-        if (articleCountByDay.hasOwnProperty(key)) {
-          var item = articleCountByDay[key]
-          if (item.every(function(v) {
-            return (v < 500)
-          })) {
-            delete articleCountByDay[key];
-          }
-        }
-      }
-
-
     }
 
   }
+
+  // Filtering
+  // Arbitary number killing
+  for (var key in articleCountByDay) {
+    if (articleCountByDay.hasOwnProperty(key)) {
+      var item = articleCountByDay[key]
+      if (item.every(function(v) {
+        return (v < 500)
+      })) {
+        delete articleCountByDay[key];
+      }
+    }
+  }
+  
   res.render('result', { data: JSON.stringify(articleCountByDay), dates: JSON.stringify(resultDates) })
 }))
 
