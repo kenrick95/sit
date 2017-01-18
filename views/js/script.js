@@ -44,7 +44,9 @@ for (var key in data) {
     item = data[key]
     formattedItem = {
       label: key,
-      data: item
+      data: item,
+      borderColor: randomColor(),
+      backgroundColor: 'transparent'
     }
     config.data.datasets.push(formattedItem)
   }

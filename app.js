@@ -1,7 +1,7 @@
 var express = require('express')
 var app = express()
 var Promise = require('bluebird')
-var request = Promise.promisifyAll(require('request'))
+var request = require('request')
 var async = require('asyncawait/async')
 var await = require('asyncawait/await')
 var pad = require("underscore.string/pad")
@@ -9,6 +9,12 @@ var port = parseInt(process.env.PORT, 10)
 if (isNaN(port)) {
   port = 80
 }
+var baseRequest = request.defaults({
+  headers: {
+    'User-Agent': 'KenrickTool/sit (https://tools.wmflabs.org/sit/; http://github.com/kenrick95/sit)'
+  }
+})
+baseRequest = Promise.promisifyAll(baseRequest)
 
 // polyfill
 if (!String.prototype.startsWith) {
@@ -22,11 +28,12 @@ if (!String.prototype.startsWith) {
 //     determine what is a trending topic on Wikipedia
 
 const MILLISECONDS_IN_DAY = 86400000
-const NUMBER_OF_DAYS = 3
+const NUMBER_OF_DAYS = 5
 
 app.set('view engine', 'pug')
 
 app.use('/sit/static/chart.js', express.static('node_modules/chart.js/dist'))
+app.use('/sit/static/randomcolor', express.static('node_modules/randomcolor'))
 app.use('/sit/static', express.static('views/js'))
 
 app.get('/sit/:project/until/:endTime', async(function (req, res) {
@@ -36,7 +43,7 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
   var result = []
   var resultDates = []
 
-  var siteinfo = await(request.getAsync('https://id.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces|general&format=json'))
+  var siteinfo = await(baseRequest.getAsync('https://id.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces|general&format=json'))
   siteinfo = JSON.parse(siteinfo.body)
   var excludeNamespaces = []
   for (var key in siteinfo.query.namespaces) {
@@ -54,7 +61,7 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
     var year = currentDate.getFullYear()
     var month = pad(currentDate.getMonth() + 1, 2, '0')
     var date = pad(currentDate.getDate(), 2, '0')
-    var response = await(request.getAsync('https://wikimedia.org/api/rest_v1/metrics/pageviews/top/' + project + '/all-access/'+ year +'/'+ month + '/' + date))
+    var response = await(baseRequest.getAsync('https://wikimedia.org/api/rest_v1/metrics/pageviews/top/' + project + '/all-access/'+ year +'/'+ month + '/' + date))
     if (response.statusCode == 200) {
       response = JSON.parse(response.body)
       items = response.items
@@ -99,6 +106,19 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
             for (var k = 0; k < l; k++) {
               articleCountByDay[key].push(0)
             }
+          }
+        }
+      }
+
+      // Filtering
+      // Arbitary number killing
+      for (var key in articleCountByDay) {
+        if (articleCountByDay.hasOwnProperty(key)) {
+          var item = articleCountByDay[key]
+          if (item.every(function(v) {
+            return (v < 500)
+          })) {
+            delete articleCountByDay[key];
           }
         }
       }
