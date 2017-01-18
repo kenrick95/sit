@@ -1,12 +1,15 @@
 doctype html
 html
-  head
-    title SIT: Something Is Trending!
+  include _head.pug
   body
-    h1 SIT: Something Is Trending!
-    canvas(id="chart")
-    script(src="/static/chart.js/Chart.min.js")
-    script var data = !{data}
-    script var dates = !{dates}
-    script(src="/static/script.js")
-    
+    h1.title SIT: Something Is Trending!
+    main
+      div.input-group
+        label(for='project') Project URL
+        input#project(type='text', placeholder='id.wikipedia.org')
+      div.input-group
+        label(for='endDate') Give me some date
+        input#endDate(type='date', placeholder='2017-01-01')
+      div.input-group
+        input#submit(type='submit', value='Submit')
+    script(src="/static/home.js")

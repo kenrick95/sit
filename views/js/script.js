@@ -7,8 +7,7 @@ var config = {
   options: {
     responsive: true,
     title: {
-      display: true,
-      text: 'Something is trending ...'
+      display: false
     },
     legend: {
       display: false

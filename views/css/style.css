@@ -1,0 +1,47 @@
+html, body {
+  padding: 0;
+  margin: 0;
+}
+h1.title {
+  text-align: center;
+  background: #eee;
+  border-bottom: 1px solid #ccc;
+  height: 50px;
+  margin-top: 0;
+  font-size: 1.5em;
+  line-height: 50px;
+}
+label {
+  display: inline-block;
+  min-width: 12em;
+  font-size: .9em;
+  font-weight: bold;
+}
+main {
+  width: 100%;
+  max-width: 30em;
+  margin: 0 auto;
+}
+.input-group {
+  margin-bottom: 1em;
+}
+input#project, input#endDate {
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: .9em;
+  padding: 6px 12px;
+}
+input#project:hover, input#endDate:hover {
+  box-shadow: 0 0 .5em gold;
+}
+input#submit {
+  border-radius: 6px;
+  background: #efefef;
+  border: 1px solid #ccc;
+  font-size: 1em;
+  padding: 6px 12px;
+}
+input#submit:hover {
+  background: #f9f9f9;
+  cursor: pointer;
+}

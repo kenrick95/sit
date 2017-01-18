@@ -106,8 +106,12 @@ app.get('/:project/until/:endTime', async(function (req, res) {
     }
 
   }
-  res.render('index', { data: JSON.stringify(articleCountByDay), dates: JSON.stringify(resultDates) })
+  res.render('result', { data: JSON.stringify(articleCountByDay), dates: JSON.stringify(resultDates) })
 }))
+
+app.get('/', function (req, res) {
+  res.render('index')
+})
 
 app.listen(80, function () {
   console.log('Example app listening on port 80!')

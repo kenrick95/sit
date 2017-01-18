@@ -1,0 +1,11 @@
+doctype html
+html
+  include _head.pug
+  body
+    h1.title SIT: Something Is Trending!
+    canvas#chart
+    script(src="/static/chart.js/Chart.min.js")
+    script var data = !{data}
+    script var dates = !{dates}
+    script(src="/static/script.js")
+    
