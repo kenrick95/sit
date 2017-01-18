@@ -24,11 +24,12 @@ if (!String.prototype.startsWith) {
 const MILLISECONDS_IN_DAY = 86400000
 const NUMBER_OF_DAYS = 3
 
-app.use('/static/chart.js', express.static('node_modules/chart.js/dist'))
-app.use('/static', express.static('views/js'))
 app.set('view engine', 'pug')
 
-app.get('/:project/until/:endTime', async(function (req, res) {
+app.use('/sit/static/chart.js', express.static('node_modules/chart.js/dist'))
+app.use('/sit/static', express.static('views/js'))
+
+app.get('/sit/:project/until/:endTime', async(function (req, res) {
   var endTime = (new Date(req.params.endTime)).getTime()
   var articleCountByDay = {}
   var project = req.params.project
@@ -63,7 +64,7 @@ app.get('/:project/until/:endTime', async(function (req, res) {
       resultDates.push(resultDate)
 
       articles = items[0].articles
-      articles.forEach((v) => {
+      articles.forEach(function (v) {
         // Filter: ignore non-article pages
         for (var j = 0; j < excludeNamespaces.length; j++) {
           if (v.article.startsWith(excludeNamespaces[j])) {
@@ -109,10 +110,10 @@ app.get('/:project/until/:endTime', async(function (req, res) {
   res.render('result', { data: JSON.stringify(articleCountByDay), dates: JSON.stringify(resultDates) })
 }))
 
-app.get('/', function (req, res) {
+app.get('/sit/', function (req, res) {
   res.render('index')
 })
 
-app.listen(80, function () {
-  console.log('Example app listening on port 80!')
+app.listen(port, function () {
+  console.log('Example app listening on port ' + port)
 })
