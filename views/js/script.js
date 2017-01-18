@@ -26,13 +26,13 @@ var config = {
       }],
       yAxes: [{
         display: true,
+        type: 'logarithmic',
         scaleLabel: {
           display: true,
           labelString: 'Page views'
         },
         ticks: {
-          suggestedMin: -10,
-          suggestedMax: 250
+          min: 0
         }
       }]
     }

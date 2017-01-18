@@ -10,6 +10,14 @@ if (isNaN(port)) {
   port = 80
 }
 
+// polyfill
+if (!String.prototype.startsWith) {
+    String.prototype.startsWith = function(searchString, position){
+      position = position || 0;
+      return this.substr(position, searchString.length) === searchString;
+  };
+}
+
 // for a given date period "start" till "end",
 //     determine what is a trending topic on Wikipedia
 
@@ -26,6 +34,19 @@ app.get('/:project/until/:endTime', async(function (req, res) {
   var project = req.params.project
   var result = []
   var resultDates = []
+
+  var siteinfo = await(request.getAsync('https://id.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces|general&format=json'))
+  siteinfo = JSON.parse(siteinfo.body)
+  var excludeNamespaces = []
+  for (var key in siteinfo.query.namespaces) {
+    if (siteinfo.query.namespaces.hasOwnProperty(key) && key != 0) {
+      var item = siteinfo.query.namespaces[key]
+      excludeNamespaces.push(item['*'] + ':')
+      excludeNamespaces.push(item['canonical'] + ':')
+    }
+  }
+  var mainpage = siteinfo.query.general.mainpage.replace(' ', '_')
+
   for(var i = 1; i < NUMBER_OF_DAYS + 1; i++) {
     var loopTime = endTime - MILLISECONDS_IN_DAY * (NUMBER_OF_DAYS - i)
     var currentDate = new Date(loopTime)
@@ -43,6 +64,18 @@ app.get('/:project/until/:endTime', async(function (req, res) {
 
       articles = items[0].articles
       articles.forEach((v) => {
+        // Filter: ignore non-article pages
+        for (var j = 0; j < excludeNamespaces.length; j++) {
+          if (v.article.startsWith(excludeNamespaces[j])) {
+            return
+          }
+        }
+
+        // Filter: ignore main page
+        if (v.article.startsWith(mainpage)) {
+          return
+        }
+
         // for newly trending article
         // pad zeros on left
         if (!(v.article in articleCountByDay)) {
