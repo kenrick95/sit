@@ -125,6 +125,41 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
       }
     }
   }
+
+  // Diff every day
+  var articleCountDiffs = {}
+  for (var key in articleCountByDay) {
+    if (articleCountByDay.hasOwnProperty(key)) {
+      var item = articleCountByDay[key]
+      articleCountDiffs[key] = []
+      for (var i = 0; i < NUMBER_OF_DAYS - 1; i++) {
+        articleCountDiffs[key].push(item[i + 1] - item[i])
+      }
+    }
+  }
+
+  // Score = total diff
+  var articleScore = {}
+  for (var key in articleCountDiffs) {
+    if (articleCountDiffs.hasOwnProperty(key)) {
+      var item = articleCountDiffs[key]
+      articleScore[key] = item.reduce(function (prevValue, curValue) {
+        return prevValue + curValue
+      })
+    }
+  }
+
+  // Sort and take top 50
+  // http://stackoverflow.com/questions/1069666/sorting-javascript-object-by-property-value/16794116#16794116
+  var articleScoreTopKeys = Object.keys(articleScore).sort(function(a,b){return articleScore[a]-articleScore[b]}).slice(-50)
+  
+  for (var key in articleCountByDay) {
+    if (articleCountByDay.hasOwnProperty(key)) {
+      if (articleScoreTopKeys.indexOf(key) === -1) {
+        delete articleCountByDay[key]
+      }
+    }
+  }
   
   res.render('result', { data: JSON.stringify(articleCountByDay), dates: JSON.stringify(resultDates) })
 }))
