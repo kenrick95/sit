@@ -72,7 +72,7 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
   var cacheValue = cache.get(cacheKey)
   var siteinfo = null
   if (cacheValue === undefined) {
-    siteinfo = await_(baseRequest.getAsync('https://id.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces|general&format=json'))
+    siteinfo = await_(baseRequest.getAsync('https://' + project + '/w/api.php?action=query&meta=siteinfo&siprop=namespaces|general&format=json'))
     siteinfo = JSON.parse(siteinfo.body)
     cache.set(cacheKey, siteinfo, SITEINFO_TTL)
   } else {
