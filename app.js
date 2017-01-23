@@ -2,9 +2,10 @@ var express = require('express')
 var app = express()
 var Promise = require('bluebird')
 var request = require('request')
-var async = require('asyncawait/async')
-var await = require('asyncawait/await')
-var pad = require("underscore.string/pad")
+var async = require('asyncawait/async') // eslint-disable-line 
+var await_ = require('asyncawait/await') // eslint-disable-line
+var pad = require('underscore.string/pad')
+var NodeCache = require('node-cache')
 var port = parseInt(process.env.PORT, 10)
 if (isNaN(port)) {
   port = 80
@@ -18,13 +19,13 @@ baseRequest = Promise.promisifyAll(baseRequest)
 
 // polyfill
 if (!String.prototype.startsWith) {
-    String.prototype.startsWith = function(searchString, position){
-      position = position || 0;
-      return this.substr(position, searchString.length) === searchString;
-  };
+  String.prototype.startsWith = function (searchString, position) {
+    position = position || 0
+    return this.substr(position, searchString.length) === searchString
+  }
 }
 
-// for a given date period "start" till "end",
+// for a given date period 'start' till 'end',
 //     determine what is a trending topic on Wikipedia
 
 const MILLISECONDS_IN_DAY = 86400000
@@ -37,12 +38,12 @@ app.use('/sit/static/randomcolor', express.static('node_modules/randomcolor'))
 app.use('/sit/static', express.static('views/js'))
 
 var processDay = async(function (project, year, month, date) {
-  var response = await(baseRequest.getAsync('https://wikimedia.org/api/rest_v1/metrics/pageviews/top/' + project + '/all-access/'+ year +'/'+ month + '/' + date))
-  if (response.statusCode == 200) {
+  var response = await_(baseRequest.getAsync('https://wikimedia.org/api/rest_v1/metrics/pageviews/top/' + project + '/all-access/' + year + '/' + month + '/' + date))
+  if (response.statusCode === 200) {
     response = JSON.parse(response.body)
-    items = response.items
-    var resultDate = items[0].year + "-" + items[0].month + "-" + items[0].day
-    console.log(resultDate + " done")
+    var items = response.items
+    var resultDate = items[0].year + '-' + items[0].month + '-' + items[0].day
+    console.log(resultDate + ' done')
 
     return items[0].articles
   }
@@ -53,36 +54,37 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
   var endTime = (new Date(req.params.endTime)).getTime()
   var articleCountByDay = {}
   var project = req.params.project
-  var result = []
   var resultDates = []
+  var key = null
+  var item = null
 
-  var siteinfo = await(baseRequest.getAsync('https://id.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces|general&format=json'))
+  var siteinfo = await_(baseRequest.getAsync('https://id.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces|general&format=json'))
   siteinfo = JSON.parse(siteinfo.body)
   var excludeNamespaces = []
-  for (var key in siteinfo.query.namespaces) {
-    if (siteinfo.query.namespaces.hasOwnProperty(key) && key != 0) {
-      var item = siteinfo.query.namespaces[key]
+  for (key in siteinfo.query.namespaces) {
+    if (siteinfo.query.namespaces.hasOwnProperty(key) && key !== 0) {
+      item = siteinfo.query.namespaces[key]
       excludeNamespaces.push(item['*'] + ':')
       excludeNamespaces.push(item['canonical'] + ':')
     }
   }
   var mainpage = siteinfo.query.general.mainpage.replace(' ', '_')
-  console.log("siteinfo done")
+  console.log('siteinfo done')
 
   var promises = []
 
-  for(var i = 1; i < NUMBER_OF_DAYS + 1; i++) {
+  for (var i = 1; i < NUMBER_OF_DAYS + 1; i++) {
     var loopTime = endTime - MILLISECONDS_IN_DAY * (NUMBER_OF_DAYS - i)
     var currentDate = new Date(loopTime)
     var year = currentDate.getFullYear()
     var month = pad(currentDate.getMonth() + 1, 2, '0')
     var date = pad(currentDate.getDate(), 2, '0')
-    var formattedDate = year + "-" + month + "-" + date
+    var formattedDate = year + '-' + month + '-' + date
     resultDates.push(formattedDate)
-    console.log("start " + formattedDate)
+    console.log('start ' + formattedDate)
     promises.push(processDay(project, year, month, date))
   }
-  var articleByDay = await(promises)
+  var articleByDay = await_(promises)
 
   articleByDay.forEach(function (articles, i) {
     articles.forEach(function (v) {
@@ -110,7 +112,7 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
       articleCountByDay[v.article].push(v.views)
     })
 
-    // now I require all articleCountByDay items to be array of length "i + 1",
+    // now I require all articleCountByDay items to be array of length 'i + 1',
     // if not, pad right with zero
     for (var key in articleCountByDay) {
       if (articleCountByDay.hasOwnProperty(key)) {
@@ -125,38 +127,36 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
     }
   })
 
-  
-
   // Filtering
   // Arbitary number killing
-  for (var key in articleCountByDay) {
+  for (key in articleCountByDay) {
     if (articleCountByDay.hasOwnProperty(key)) {
-      var item = articleCountByDay[key]
-      if (item.every(function(v) {
+      item = articleCountByDay[key]
+      if (item.every(function (v) {
         return (v < 500)
       })) {
-        delete articleCountByDay[key];
+        delete articleCountByDay[key]
       }
     }
   }
 
   // Diff every day
   var articleCountDiffs = {}
-  for (var key in articleCountByDay) {
+  for (key in articleCountByDay) {
     if (articleCountByDay.hasOwnProperty(key)) {
-      var item = articleCountByDay[key]
+      item = articleCountByDay[key]
       articleCountDiffs[key] = []
-      for (var i = 0; i < NUMBER_OF_DAYS - 1; i++) {
-        articleCountDiffs[key].push(item[i + 1] - item[i])
+      for (var index = 0; index < NUMBER_OF_DAYS - 1; index++) {
+        articleCountDiffs[key].push(item[index + 1] - item[index])
       }
     }
   }
 
   // Score = total diff
   var articleScore = {}
-  for (var key in articleCountDiffs) {
+  for (key in articleCountDiffs) {
     if (articleCountDiffs.hasOwnProperty(key)) {
-      var item = articleCountDiffs[key]
+      item = articleCountDiffs[key]
       articleScore[key] = item.reduce(function (prevValue, curValue) {
         return prevValue + curValue
       })
@@ -165,16 +165,18 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
 
   // Sort and take top 50
   // http://stackoverflow.com/questions/1069666/sorting-javascript-object-by-property-value/16794116#16794116
-  var articleScoreTopKeys = Object.keys(articleScore).sort(function(a,b){return articleScore[a]-articleScore[b]}).slice(-50)
-  
-  for (var key in articleCountByDay) {
+  var articleScoreTopKeys = Object.keys(articleScore).sort(function (a, b) {
+    return articleScore[a] - articleScore[b]
+  }).slice(-50)
+
+  for (key in articleCountByDay) {
     if (articleCountByDay.hasOwnProperty(key)) {
       if (articleScoreTopKeys.indexOf(key) === -1) {
         delete articleCountByDay[key]
       }
     }
   }
-  
+
   res.render('result', { data: JSON.stringify(articleCountByDay), dates: JSON.stringify(resultDates) })
 }))
 
