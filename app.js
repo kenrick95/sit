@@ -42,53 +42,11 @@ var processDay = async(function (project, year, month, date) {
     response = JSON.parse(response.body)
     items = response.items
     var resultDate = items[0].year + "-" + items[0].month + "-" + items[0].day
+    console.log(resultDate + " done")
 
-    console.log(resultDate)
-
-    // TODO how to pass "excludeNamespaces"
-    // TODO how to pass "mainpage"
-    // TODO how to handle "articleCountByDay"
-
-    articles = items[0].articles
-    articles.forEach(function (v) {
-      // Filter: ignore non-article pages
-      for (var j = 0; j < excludeNamespaces.length; j++) {
-        if (v.article.startsWith(excludeNamespaces[j])) {
-          return
-        }
-      }
-
-      // Filter: ignore main page
-      if (v.article.startsWith(mainpage)) {
-        return
-      }
-
-      // for newly trending article
-      // pad zeros on left
-      if (!(v.article in articleCountByDay)) {
-        articleCountByDay[v.article] = []
-        for (var k = 0; k < i - 1; k++) {
-          articleCountByDay[v.article].push(0)
-        }
-      }
-
-      articleCountByDay[v.article].push(v.views)
-    })
-
-    // now I require all articleCountByDay items to be array of length "i",
-    // if not, pad right with zero
-    for (var key in articleCountByDay) {
-      if (articleCountByDay.hasOwnProperty(key)) {
-        var item = articleCountByDay[key]
-        if (item.length < i) {
-          var l = i - item.length
-          for (var k = 0; k < l; k++) {
-            articleCountByDay[key].push(0)
-          }
-        }
-      }
-    }
+    return items[0].articles
   }
+  return []
 })
 
 app.get('/sit/:project/until/:endTime', async(function (req, res) {
@@ -109,6 +67,7 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
     }
   }
   var mainpage = siteinfo.query.general.mainpage.replace(' ', '_')
+  console.log("siteinfo done")
 
   var promises = []
 
@@ -119,14 +78,54 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
     var month = pad(currentDate.getMonth() + 1, 2, '0')
     var date = pad(currentDate.getDate(), 2, '0')
     var formattedDate = year + "-" + month + "-" + date
-
-    // create promise
-    promises.push(new Promise(async(function (resolve, reject) {
-      return await(processDay(project, year, month, date))
-    })))
-
+    resultDates.push(formattedDate)
+    console.log("start " + formattedDate)
+    promises.push(processDay(project, year, month, date))
   }
-  await(promises)
+  var articleByDay = await(promises)
+
+  articleByDay.forEach(function (articles, i) {
+    articles.forEach(function (v) {
+      // Filter: ignore non-article pages
+      for (var j = 0; j < excludeNamespaces.length; j++) {
+        if (v.article.startsWith(excludeNamespaces[j])) {
+          return
+        }
+      }
+
+      // Filter: ignore main page
+      if (v.article.startsWith(mainpage)) {
+        return
+      }
+
+      // for newly trending article
+      // pad zeros on left
+      if (!(v.article in articleCountByDay)) {
+        articleCountByDay[v.article] = []
+        for (var k = 0; k < i; k++) {
+          articleCountByDay[v.article].push(0)
+        }
+      }
+
+      articleCountByDay[v.article].push(v.views)
+    })
+
+    // now I require all articleCountByDay items to be array of length "i + 1",
+    // if not, pad right with zero
+    for (var key in articleCountByDay) {
+      if (articleCountByDay.hasOwnProperty(key)) {
+        var item = articleCountByDay[key]
+        if (item.length < i + 1) {
+          var l = i + 1 - item.length
+          for (var k = 0; k < l; k++) {
+            articleCountByDay[key].push(0)
+          }
+        }
+      }
+    }
+  })
+
+  
 
   // Filtering
   // Arbitary number killing
