@@ -6,6 +6,8 @@ var async = require('asyncawait/async') // eslint-disable-line
 var await_ = require('asyncawait/await') // eslint-disable-line
 var pad = require('underscore.string/pad')
 var NodeCache = require('node-cache')
+
+var cache = new NodeCache()
 var port = parseInt(process.env.PORT, 10)
 if (isNaN(port)) {
   port = 80
@@ -30,6 +32,7 @@ if (!String.prototype.startsWith) {
 
 const MILLISECONDS_IN_DAY = 86400000
 const NUMBER_OF_DAYS = 14
+const SITEINFO_TTL = 3600 // seconds
 
 app.set('view engine', 'pug')
 
@@ -38,16 +41,23 @@ app.use('/sit/static/randomcolor', express.static('node_modules/randomcolor'))
 app.use('/sit/static', express.static('views/js'))
 
 var processDay = async(function (project, year, month, date) {
-  var response = await_(baseRequest.getAsync('https://wikimedia.org/api/rest_v1/metrics/pageviews/top/' + project + '/all-access/' + year + '/' + month + '/' + date))
-  if (response.statusCode === 200) {
-    response = JSON.parse(response.body)
-    var items = response.items
-    var resultDate = items[0].year + '-' + items[0].month + '-' + items[0].day
-    console.log(resultDate + ' done')
+  var cacheKey = JSON.stringify({'project': project, 'year': year, 'month': month, 'date': date})
+  var cacheValue = cache.get(cacheKey)
+  if (cacheValue === undefined) {
+    var response = await_(baseRequest.getAsync('https://wikimedia.org/api/rest_v1/metrics/pageviews/top/' + project + '/all-access/' + year + '/' + month + '/' + date))
+    if (response.statusCode === 200) {
+      response = JSON.parse(response.body)
+      var items = response.items
+      var resultDate = items[0].year + '-' + items[0].month + '-' + items[0].day
+      console.log(resultDate + ' done')
 
-    return items[0].articles
+      cache.set(cacheKey, items[0].articles)
+      return items[0].articles
+    }
+    return []
   }
-  return []
+  console.log('processDay cache hit')
+  return cacheValue
 })
 
 app.get('/sit/:project/until/:endTime', async(function (req, res) {
@@ -58,8 +68,18 @@ app.get('/sit/:project/until/:endTime', async(function (req, res) {
   var key = null
   var item = null
 
-  var siteinfo = await_(baseRequest.getAsync('https://id.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces|general&format=json'))
-  siteinfo = JSON.parse(siteinfo.body)
+  var cacheKey = JSON.stringify({'siteinfo': project})
+  var cacheValue = cache.get(cacheKey)
+  var siteinfo = null
+  if (cacheValue === undefined) {
+    siteinfo = await_(baseRequest.getAsync('https://id.wikipedia.org/w/api.php?action=query&meta=siteinfo&siprop=namespaces|general&format=json'))
+    siteinfo = JSON.parse(siteinfo.body)
+    cache.set(cacheKey, siteinfo, SITEINFO_TTL)
+  } else {
+    console.log('siteinfo cache hit')
+    siteinfo = cacheValue
+  }
+
   var excludeNamespaces = []
   for (key in siteinfo.query.namespaces) {
     if (siteinfo.query.namespaces.hasOwnProperty(key) && key !== 0) {
