@@ -45,3 +45,8 @@ input#submit:hover {
   background: #f9f9f9;
   cursor: pointer;
 }
+.ui-autocomplete {
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}

@@ -1,3 +1,4 @@
+/* globals dates, data, randomColor, Chart */
 var config = {
   type: 'line',
   data: {

@@ -238,7 +238,7 @@ app.get('/sit/:project/until/:endTime', async(function (req, res, next) {
 }))
 
 app.get('/sit/', function (req, res) {
-  res.render('index')
+  res.render('index', {validProjects: JSON.stringify(validProjects)})
 })
 
 app.listen(port, function () {
