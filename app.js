@@ -70,14 +70,14 @@ var processDay = async(function (project, year, month, date) {
       response = JSON.parse(response.body)
       var items = response.items
       var resultDate = items[0].year + '-' + items[0].month + '-' + items[0].day
-      console.log(resultDate + ' done')
+      console.log('processDay ' + project + ' - ' + resultDate + ' done')
 
       cache.set(cacheKey, items[0].articles)
       return items[0].articles
     }
     return []
   }
-  console.log('processDay cache hit')
+  console.log('processDay ' + project + ' cache hit')
   return cacheValue
 })
 
@@ -104,7 +104,7 @@ app.get('/sit/:project/until/:endTime', async(function (req, res, next) {
     siteinfo = JSON.parse(siteinfo.body)
     cache.set(cacheKey, siteinfo, SITEINFO_TTL)
   } else {
-    console.log('siteinfo cache hit')
+    console.log('siteinfo ' + project + ' cache hit')
     siteinfo = cacheValue
   }
 
@@ -117,7 +117,7 @@ app.get('/sit/:project/until/:endTime', async(function (req, res, next) {
     }
   }
   var mainpage = siteinfo.query.general.mainpage.replace(' ', '_')
-  console.log('siteinfo done')
+  console.log('siteinfo ' + project + ' done')
 
   var promises = []
 
@@ -129,7 +129,7 @@ app.get('/sit/:project/until/:endTime', async(function (req, res, next) {
     var date = pad(currentDate.getDate(), 2, '0')
     var formattedDate = year + '-' + month + '-' + date
     resultDates.push(formattedDate)
-    console.log('start ' + formattedDate)
+    console.log('start ' + project + ' - ' + formattedDate)
     promises.push(processDay(project, year, month, date))
   }
   var articleByDay = await_(promises)
@@ -233,7 +233,7 @@ app.get('/sit/', function (req, res) {
 })
 
 app.listen(port, function () {
-  console.log('Example app listening on port ' + port)
+  console.log('Listening on port ' + port)
 })
 
 // Error handling
