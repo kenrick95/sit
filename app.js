@@ -82,7 +82,8 @@ var processDay = async(function (project, year, month, date) {
 })
 
 app.get('/sit/:project/until/:endTime', async(function (req, res, next) {
-  var endTime = (new Date(req.params.endTime)).getTime()
+  var endTime = (new Date(req.params.endTime.replace(/[^0-9-]/g, ''))).getTime()
+  var startTime = endTime - MILLISECONDS_IN_DAY * (NUMBER_OF_DAYS - 1)
   var articleCountByDay = {}
   var project = req.params.project.replace(/[^a-z.-]/g, '')
   var resultDates = []
@@ -92,7 +93,15 @@ app.get('/sit/:project/until/:endTime', async(function (req, res, next) {
 
   if (validProjects.indexOf(project) === -1) {
     err = new Error('Invalid project')
-    err.status = 404
+    err.status = 405
+    return next(err)
+  }
+  var dataEnd = new Date((new Date()).getTime() - MILLISECONDS_IN_DAY)
+  dataEnd.setUTCHours(0, 0, 0)
+  var dataStart = new Date('2015-06-30T23:59:59.999Z')
+  if (dataStart > startTime || endTime > dataEnd) {
+    err = new Error('Invalid time')
+    err.status = 405
     return next(err)
   }
 
