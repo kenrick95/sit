@@ -2,8 +2,8 @@ var express = require('express')
 var app = express()
 var Promise = require('bluebird')
 var request = require('request')
-var async = require('asyncawait/async') // eslint-disable-line 
-var await_ = require('asyncawait/await') // eslint-disable-line
+var async = require('asyncawait/async')
+var await_ = require('asyncawait/await')
 var pad = require('underscore.string/pad')
 var NodeCache = require('node-cache')
 
@@ -21,7 +21,7 @@ baseRequest = Promise.promisifyAll(baseRequest)
 
 // polyfill
 if (!String.prototype.startsWith) {
-  String.prototype.startsWith = function (searchString, position) {
+  String.prototype.startsWith = function (searchString, position) { // eslint-disable-line no-extend-native
     position = position || 0
     return this.substr(position, searchString.length) === searchString
   }
@@ -39,6 +39,27 @@ app.set('view engine', 'pug')
 app.use('/sit/static/chart.js', express.static('node_modules/chart.js/dist'))
 app.use('/sit/static/randomcolor', express.static('node_modules/randomcolor'))
 app.use('/sit/static', express.static('views/js'))
+
+var validProjects = []
+var updateValidProjects = async(function () {
+  var response = await_(baseRequest.getAsync('https://meta.wikimedia.org/w/api.php?action=sitematrix&format=json'))
+  if (response.statusCode === 200) {
+    response = JSON.parse(response.body)
+    validProjects = []
+    for (var key in response.sitematrix) {
+      if (response.sitematrix.hasOwnProperty(key)) {
+        if (key === 'count' || key === 'specials') {
+          continue
+        }
+        response.sitematrix[key].site.forEach(function (project) {
+          validProjects.push(project.url.replace(/https?:\/\//, ''))
+        })
+      }
+    }
+    console.log('Updated valid projects')
+  }
+})
+updateValidProjects()
 
 var processDay = async(function (project, year, month, date) {
   var cacheKey = JSON.stringify({'project': project, 'year': year, 'month': month, 'date': date})
@@ -60,13 +81,20 @@ var processDay = async(function (project, year, month, date) {
   return cacheValue
 })
 
-app.get('/sit/:project/until/:endTime', async(function (req, res) {
+app.get('/sit/:project/until/:endTime', async(function (req, res, next) {
   var endTime = (new Date(req.params.endTime)).getTime()
   var articleCountByDay = {}
-  var project = req.params.project
+  var project = req.params.project.replace(/[^a-z.-]/g, '')
   var resultDates = []
   var key = null
   var item = null
+  var err = null
+
+  if (validProjects.indexOf(project) === -1) {
+    err = new Error('Invalid project')
+    err.status = 404
+    return next(err)
+  }
 
   var cacheKey = JSON.stringify({'siteinfo': project})
   var cacheValue = cache.get(cacheKey)
@@ -206,4 +234,16 @@ app.get('/sit/', function (req, res) {
 
 app.listen(port, function () {
   console.log('Example app listening on port ' + port)
+})
+
+// Error handling
+app.use(function (err, req, res, next) {
+  if (err.status) {
+    res.status(err.status)
+    res.send(err.message)
+  } else {
+    console.error(err.stack)
+    res.status(500)
+    res.send('Something broke!')
+  }
 })
