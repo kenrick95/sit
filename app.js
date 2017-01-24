@@ -121,8 +121,10 @@ app.get('/sit/:project/until/:endTime', async(function (req, res, next) {
   for (key in siteinfo.query.namespaces) {
     if (siteinfo.query.namespaces.hasOwnProperty(key) && key !== 0) {
       item = siteinfo.query.namespaces[key]
-      excludeNamespaces.push(item['*'] + ':')
-      excludeNamespaces.push(item['canonical'] + ':')
+      excludeNamespaces.push(item['*'].replace(' ', '_') + ':')
+      if ('canonical' in item) {
+        excludeNamespaces.push(item.canonical.replace(' ', '_') + ':')
+      }
     }
   }
   var mainpage = siteinfo.query.general.mainpage.replace(' ', '_')
@@ -184,13 +186,28 @@ app.get('/sit/:project/until/:endTime', async(function (req, res, next) {
     }
   })
 
+  // Average non-zero page views
+  var pageViewSum = 0
+  var pageViewCount = 0
+  for (key in articleCountByDay) {
+    if (articleCountByDay.hasOwnProperty(key)) {
+      articleCountByDay[key].forEach(function (v) {
+        if (v > 0) {
+          pageViewSum += v
+          pageViewCount += 1
+        }
+      })
+    }
+  }
+  var pageViewAverage = (pageViewSum + 1) / (pageViewCount + 1) // unlikely, but possible to have "0" count
+
   // Filtering
-  // Arbitary number killing
+  // Kill below-average articles
   for (key in articleCountByDay) {
     if (articleCountByDay.hasOwnProperty(key)) {
       item = articleCountByDay[key]
       if (item.every(function (v) {
-        return (v < 500)
+        return (v < pageViewAverage)
       })) {
         delete articleCountByDay[key]
       }
